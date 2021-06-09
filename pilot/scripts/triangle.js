@@ -50,17 +50,17 @@ async function RunTriangleAsync()
     /* GPUTexture */
     const swapChainTexture = swapChain.getCurrentTexture();
     /* GPUTextureView */
-    const renderAttachment = swapChainTexture.createView();
+    const renderView = swapChainTexture.createView();
     
-    /* GPUColor */
-    const darkBlue = { r: 0.15, g: 0.15, b: 0.5, a: 1 };
+    /* Clear Color */
+    const purple = { r: 57.0/255, g: 2.0/255, b: 115.0/255, a: 1 };
     
     /* GPURenderPassColorATtachmentDescriptor */
     const colorAttachmentDescriptor = {
-        attachment: renderAttachment,
+        view: renderView,
         loadOp: "clear",
         storeOp: "store",
-        clearColor: darkBlue
+        loadValue: purple
     };
     
     /* GPURenderPassDescriptor */
@@ -73,16 +73,13 @@ async function RunTriangleAsync()
     /* GPURenderPassEncoder */
     const renderPassEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     
-    renderPassEncoder.setPipeline(renderPipeline);
-    renderPassEncoder.setVertexBuffers(vertexBufferSlot, [vertexBuffer], [0]);
-    renderPassEncoder.draw(3, 1, 0, 0); // 3 vertices, 1 instance, 0th vertex, 0th instance.
     renderPassEncoder.endPass();
     
     /* GPUComamndBuffer */
     const commandBuffer = commandEncoder.finish();
     
     /* GPUQueue */
-    const queue = device.getQueue();
+    const queue = device.queue;
     queue.submit([commandBuffer]);
 }
 
