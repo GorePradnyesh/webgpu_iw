@@ -18,15 +18,15 @@ function CheckWebGPU()
 
 
 const vertexBufferInput = new Float32Array([
-  // float2 coordinates, float3 color
-  -0.5, 0.5, 1.0, 0.0, 0.0,
-  -0.5, -0.5, 0.0, 1.0, 0.0,
-  0.5, 0.5, 1.0, 0.0, 1.0,
-  0.5, 0.5, 1.0, 0.0, 1.0,
-  -0.5, -0.5, 0.0, 1.0, 0.0,
-  0.5, -0.5, 1.0, 1.0, 0.0,
+  // float2 coordinates, float4 color
+  -0.5, 0.5, 1.0, 0.0, 0.0, 1.0,
+  -0.5, -0.5, 0.0, 1.0, 0.0, 1.0,
+  0.5, 0.5, 1.0, 0.0, 1.0, 1.0,
+  0.5, 0.5, 1.0, 0.0, 1.0, 1.0,
+  -0.5, -0.5, 0.0, 1.0, 0.0, 1.0,
+  0.5, -0.5, 0.0, 0.0, 1.0, 1.0,
 ]);
-const vertexInputSizeBytes = 4 * 5;  // 5 floats
+const vertexInputSizeBytes = 4 * 6;  // 5 floats
 const positionOffset = 0;
 const colorOffset = 4 * 2;
 
@@ -34,15 +34,17 @@ const colorOffset = 4 * 2;
 const vertexSource = `
 struct VertexOutput {
   [[builtin(position)]] Position : vec4<f32>;
-  [[location(0)]] vp : vec2<f32>;
+  [[location(0)]] color : vec4<f32>;
 };
 
 [[stage(vertex)]]
-fn main([[location(0)]] vertexPosition: vec2<f32>)-> VertexOutput
+fn main(
+  [[location(0)]] vertexPosition: vec2<f32>,
+  [[location(1)]] color: vec4<f32>)-> VertexOutput
 {
   var output: VertexOutput;
   output.Position = vec4<f32>(vertexPosition, 0.0, 1.0);
-  output.vp = vertexPosition;
+  output.color = color;
   return output;
 }
 `;
@@ -50,11 +52,9 @@ fn main([[location(0)]] vertexPosition: vec2<f32>)-> VertexOutput
 // TODO: Move to another file   
 const fragSource = `
 [[stage(fragment)]]
-fn main([[location(0)]] vp: vec2<f32>) -> [[location(0)]] vec4<f32>
+fn main([[location(0)]] color: vec4<f32>) -> [[location(0)]] vec4<f32>
 {
-  var rvalue = 0.5 + vp.x;
-  var gvalue = 0.5 + vp.y;  
-  return vec4<f32>(rvalue, gvalue, 1.0, 1.0);
+  return vec4<f32>(color);
 }
 `;
 
@@ -66,6 +66,11 @@ const vertexBufferLayout = {
     {
       shaderLocation: 0,
       offset: positionOffset,
+      format: 'float32x2',
+    },
+    {
+      shaderLocation: 1,
+      offset: colorOffset,
       format: 'float32x4',
     }
   ],
