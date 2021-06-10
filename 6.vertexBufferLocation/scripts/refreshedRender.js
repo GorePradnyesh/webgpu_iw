@@ -52,7 +52,9 @@ const fragSource = `
 [[stage(fragment)]]
 fn main([[location(0)]] vp: vec2<f32>) -> [[location(0)]] vec4<f32>
 {
-  return vec4<f32>(0.0, 1.0, 1.0, 1.0);
+  var rvalue = 0.5 + vp.x;
+  var gvalue = 0.5 + vp.y;  
+  return vec4<f32>(rvalue, gvalue, 1.0, 1.0);
 }
 `;
 
