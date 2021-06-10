@@ -26,7 +26,7 @@ const vertexBufferInput = new Float32Array([
   -0.5, -0.5, 0.0, 1.0, 0.0, 1.0,
   0.5, -0.5, 0.0, 0.0, 1.0, 1.0,
 ]);
-const vertexInputSizeBytes = 4 * 6;  // 5 floats
+const vertexInputSizeBytes = 4 * 6;  // 6 floats
 const positionOffset = 0;
 const colorOffset = 4 * 2;
 
