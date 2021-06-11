@@ -102,21 +102,21 @@ class RendererContext
         // Allocate Test buffer
         this.bufferWidth = 64;
         this.bufferHeight = 64;
-        this.bytesPerPix = 4; // ( 8bits * 4)
+        this.bytesPerPix = 4 * 4; // ( 4 bytes * 4)
         this.bufferSize = (this.bufferWidth * this.bytesPerPix) * (this.bufferHeight /** this.bytesPerPix*/);
         this.testBuffer = this.device.createBuffer({
           size: this.bufferSize,
           usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
           mappedAtCreation: true
         });
-        let dataArray = new Uint8Array(this.testBuffer.getMappedRange());
+        let dataArray = new Float32Array(this.testBuffer.getMappedRange());
         var i;
         for(i=0; i < 64 * 4 * 64; i=i+4)
         {
-          dataArray[i] = 255;
-          dataArray[i+1] = 0;
-          dataArray[i+2] = 0;
-          dataArray[i+3] = 255;
+          dataArray[i] = 1.0;
+          dataArray[i+1] = 0.5;
+          dataArray[i+2] = 0.5;
+          dataArray[i+3] = 1.0;
         }
         this.testBuffer.unmap();
         this.imageCopyBuffer = {
@@ -128,7 +128,7 @@ class RendererContext
         // Allocate test Texture
         const testTextureDescriptor = {
           size: [this.bufferWidth, this.bufferHeight, 1],
-          format: 'rgba8unorm',
+          format: 'rgba32float',
           usage: GPUTextureUsage.SAMPLED | GPUTextureUsage.COPY_DST
         };        
         this.testTexture = this.device.createTexture(testTextureDescriptor);
