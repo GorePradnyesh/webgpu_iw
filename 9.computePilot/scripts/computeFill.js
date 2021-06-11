@@ -74,7 +74,7 @@ const computeSource=`
 fn main([[builtin(global_invocation_id)]] global_id: vec3<u32>)
 {
   var index: u32 = global_id.y * u32(64) + global_id.x;
-  ioDataBuffer.buffer[index] = vec4<f32>(1.0, 0.0, 1.0, 0.0);
+  ioDataBuffer.buffer[index] = vec4<f32>(1.0, 0.0, 0.0, 1.0);
 }
 `;
 
@@ -115,30 +115,31 @@ class RendererContext
         });
         new Float32Array(this.verticesBuffer.getMappedRange()).set(vertexBufferInput);
         this.verticesBuffer.unmap();
-
+        this.pixelFormat = 'rgba32float';
+        
         // ==========================================
         // Allocate Storage Buffers and Display Texture
         // ==========================================
         this.bufferWidth = 64;
         this.bufferHeight = 64;
-        this.bytesPerPix = 4; // ( 8bits * 4)
+        this.bytesPerPix = 4 * 4; // ( sizeof(f32) * channel count ) 
         this.bufferSize = (this.bufferWidth * this.bytesPerPix) * (this.bufferHeight /** this.bytesPerPix*/);
         this.storageBuffer = this.device.createBuffer({
           size: this.bufferSize,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
           mappedAtCreation: true
-        });        
+        });
         this.storageBuffer.unmap();
         this.imageCopyBuffer = {
           buffer: this.storageBuffer,
-          bytesPerRow: this.bufferWidth * this.bytesPerPix,
+          bytesPerRow: this.bufferWidth * this.bytesPerPix, // NOTE: !! Assumin alignment !! 
           rowPerImage: this.bufferHeight
         };
         
         // Allocate test Texture
         const blitTextureDescriptor = {
           size: [this.bufferWidth, this.bufferHeight, 1],
-          format: 'rgba8unorm',
+          format: this.pixelFormat,
           usage: GPUTextureUsage.SAMPLED | GPUTextureUsage.COPY_DST
         };        
         this.blitTexture = this.device.createTexture(blitTextureDescriptor);
@@ -147,7 +148,7 @@ class RendererContext
         // ==========================================
         // Create Compute Pipeline 
         // ==========================================
-        this.computeShaderModule = this.device.createShaderModule({code: computeSource});
+        this.computeShaderModule = this.device.createShaderModule({code: computeSource}); // load SPIR-V instead
         this.computePipeline = this.device.createComputePipeline({
                                 compute:{
                                   module: this.computeShaderModule,
@@ -169,7 +170,7 @@ class RendererContext
         // ==========================================
         // Create Render Pipeline 
         // ==========================================
-        const swapChainFormat = 'bgra8unorm';
+        const swapChainFormat = 'bgra8unorm'; // independent of pixelFormat.
 
         /* GPUSwapChainDescriptor */
         const swapChainDescriptor = { device: device, format: swapChainFormat };
@@ -242,7 +243,10 @@ class RendererContext
 
         //==========================================
         // Copy Buffer to Texture
-        commandEncoder.copyBufferToTexture(this.imageCopyBuffer, this.imageCopyTexture, [this.bufferWidth, this.bufferHeight, 1]);
+        commandEncoder.copyBufferToTexture(
+          this.imageCopyBuffer, 
+          this.imageCopyTexture, 
+          [this.bufferWidth, this.bufferHeight, 1]);
         
         //==========================================
         // RenderPhase to blit the texture
