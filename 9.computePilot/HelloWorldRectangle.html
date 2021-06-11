@@ -1,0 +1,29 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=600">
+        <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+        <title>WebGPU Hello Triangle</title>
+
+        <style>
+            body {
+                font-family: system-ui;
+                color: rgb(57, 2, 115);
+                background-color: rgb(244, 234, 255);
+                text-align: center;
+            }
+            canvas {
+                margin: 0 auto;
+            }
+        </style>
+
+    </head>
+    <body>
+        <div id="contents">
+            <h1>Textured Rect IW</h1>
+            <h4>Allocate GPUBuffer, fill on host side, copy to texture and blit texture</h4>
+            <h4>Render Commands only, no compute commmands</h4>
+            <canvas></canvas>
+        </div>
+        <script src="scripts/texFromBuff.js"></script>
+    </body>
+</html>
