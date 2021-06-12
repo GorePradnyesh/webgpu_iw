@@ -153,7 +153,8 @@ class RendererContext
             height: video.videoHeight
           },
           format: videoTextureFormat,
-          usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.SAMPLED
+          usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.SAMPLED | GPUTextureUsage.RENDER_ATTACHMENT 
+          // RENDER_ATTACHMENT needed for copyExternalImageToTexture
         };
         this.videoTexture = this.device.createTexture(videoTextureDescriptor);
 
@@ -240,20 +241,24 @@ class RendererContext
 
     async FrameRender()
     {      
-      createImageBitmap(video).then(videoFrame =>
+      
+      createImageBitmap(video).then(videoFrameBitmap =>
         {
           /* GPUCommandEncoder */
           const commandEncoder = this.device.createCommandEncoder();
+          const gpuImageCopyExternalImage = {
+            source: videoFrameBitmap
+          }  
           
-          this.device.queue.copyImageBitmapToTexture(
-            { imageBitmap: videoFrame, origin: { x: 0, y: 0 } },
-            { texture: this.videoTexture },
-            {
-              width: video.videoWidth,
-              height: video.videoHeight,
-            }
-          );
-
+          this.device.queue.copyExternalImageToTexture(
+              gpuImageCopyExternalImage,
+              { texture: this.videoTexture },
+              {
+                width: video.videoWidth,
+                height: video.videoHeight,
+              }
+          );         
+          
           //==========================================
           // RenderPhase to blit the texture
           /* GPUTexture */
