@@ -81,7 +81,7 @@ fn main([[builtin(global_invocation_id)]] global_id: vec3<u32>)
 
 const kernelSource=`
 [[group(0), binding(0)]] var textureSampler: sampler;
-[[group(1), binding(0)]] var inputTexture: texture_2d<rgba8unorm>;
+[[group(1), binding(0)]] var inputTexture: texture_2d<f32>;
 [[group(1), binding(1)]] var outputTexture: texture_storage_2d<rgba8unorm, write>;
 
 [[stage(compute)]]
