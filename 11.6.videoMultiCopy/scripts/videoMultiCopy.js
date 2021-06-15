@@ -79,12 +79,16 @@ const pfcSource=`
 [[stage(compute)]]
 fn main([[builtin(global_invocation_id)]] global_id: vec3<u32>)
 {
-  var index: u32 = global_id.y * u32(64) + global_id.x;
+  var index: u32 = global_id.y * u32(1920) + global_id.x;
   var readValue: u32 = source.buffer[index];
-  var writeValue: vec4<f32> = vec4<f32>(0.43, 0.7, 0.2, 1.0);
+
+  // var float_1: f32 = f32(readValue & 0x000000ff);
+  var writeValue: vec4<f32> = unpack4x8unorm(readValue);
+
+  var writeValue_o: vec4<f32> = vec4<f32>(writeValue.x, writeValue.y, writeValue.z, 1.0);
   dest.buffer[index] = writeValue;
   var position_i32: vec2<i32> = vec2<i32>(i32(global_id.x), i32(global_id.y));
-  textureStore(outputTexture, position_i32, writeValue);
+  textureStore(outputTexture, position_i32, writeValue_o);
 }
 
 `;
