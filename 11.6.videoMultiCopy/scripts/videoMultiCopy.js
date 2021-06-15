@@ -61,7 +61,7 @@ fn main([[location(0)]] nCoords: vec2<f32>) -> [[location(0)]] vec4<f32>
 }
 `;
 
-const pfcSource=`
+const f32ComputeSource=`
 [[block]] struct sourceData
 {
   buffer: array<u32>;
@@ -199,18 +199,18 @@ class RendererContext
         // Create Compute Pipeline 
         // ==========================================        
 
-        // PFC Source
-        this.pfcShaderModule = this.device.createShaderModule({code: pfcSource}); // load SPIR-V instead  
-        this.pfcPipeline = this.device.createComputePipeline({
+        // f32Compute Source
+        this.f32ComputeShaderModule = this.device.createShaderModule({code: f32ComputeSource}); // load SPIR-V instead  
+        this.f32ComputePipeline = this.device.createComputePipeline({
           compute:{
-            module: this.pfcShaderModule,
+            module: this.f32ComputeShaderModule,
             entryPoint: 'main'
           }
         });
         // constants necessary since no sampler. 
         // compute bindings
-        this.pfcBindGroup = this.device.createBindGroup({
-          layout: this.pfcPipeline.getBindGroupLayout(0),
+        this.f32ComputeBindGroup = this.device.createBindGroup({
+          layout: this.f32ComputePipeline.getBindGroupLayout(0),
           entries: [
             {
               binding: 0,
@@ -313,11 +313,11 @@ class RendererContext
             this.videoBufferCopy,
             [video.videoWidth, video.videoHeight, 1]);
 
-          const pfcPass = commandEncoder.beginComputePass();
-          pfcPass.setPipeline(this.pfcPipeline);
-          pfcPass.setBindGroup(0, this.pfcBindGroup);
-          pfcPass.dispatch(video.videoWidth, video.videoHeight);
-          pfcPass.endPass();
+          const f32ComputePass = commandEncoder.beginComputePass();
+          f32ComputePass.setPipeline(this.f32ComputePipeline);
+          f32ComputePass.setBindGroup(0, this.f32ComputeBindGroup);
+          f32ComputePass.dispatch(video.videoWidth, video.videoHeight);
+          f32ComputePass.endPass();
 
           
           //==========================================
