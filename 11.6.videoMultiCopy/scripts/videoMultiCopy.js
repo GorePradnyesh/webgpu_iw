@@ -61,41 +61,6 @@ fn main([[location(0)]] nCoords: vec2<f32>) -> [[location(0)]] vec4<f32>
 }
 `;
 
-
-const computeSource=`
-[[block]] struct Data
-{
-  buffer: array<vec4<f32>>;
-};
-
-[[group(0), binding(0)]] var<storage, read_write> ioDataBuffer : Data;
-
-[[stage(compute)]]
-fn main([[builtin(global_invocation_id)]] global_id: vec3<u32>)
-{
-  var index: u32 = global_id.y * u32(64) + global_id.x;
-  ioDataBuffer.buffer[index] = vec4<f32>(1.0, 0.0, 0.0, 1.0);
-}
-`;
-
-
-const kernelSource=`
-[[group(0), binding(0)]] var textureSampler: sampler;
-[[group(1), binding(0)]] var inputTexture: texture_2d<f32>;
-[[group(1), binding(1)]] var outputTexture: texture_storage_2d<rgba8unorm, write>;
-
-[[stage(compute)]]
-fn main([[builtin(global_invocation_id)]] global_id: vec3<u32>)
-{
-  var position: vec2<f32> = vec2<f32>(f32(global_id.x), f32(global_id.y));
-  var value: vec4<f32> = textureSampleLevel(inputTexture, textureSampler, position, 0.0);
-  // var writeValue: vec4<f32> = vec4<f32>(value.x, value.y, value.z, value.w);
-  var writeValue: vec4<f32> = vec4<f32>(1.0, 0.8, 1.0, 1.0);
-  var position_i32: vec2<i32> = vec2<i32>(i32(global_id.x), i32(global_id.y));
-  textureStore(outputTexture, position_i32, writeValue);
-}
-`
-
 const pfcSource=`
 [[block]] struct sourceData
 {
@@ -109,13 +74,17 @@ const pfcSource=`
 
 [[group(0), binding(0)]] var<storage, read_write> source : sourceData;
 [[group(0), binding(1)]] var<storage, read_write> dest : operationalData;
+[[group(0), binding(2)]] var outputTexture: texture_storage_2d<rgba8unorm, write>;
 
 [[stage(compute)]]
 fn main([[builtin(global_invocation_id)]] global_id: vec3<u32>)
 {
   var index: u32 = global_id.y * u32(64) + global_id.x;
   var readValue: u32 = source.buffer[index];
-  dest.buffer[index] = vec4<f32>(1.0, 0.7, 0.2, 1.0);
+  var writeValue: vec4<f32> = vec4<f32>(0.43, 0.7, 0.2, 1.0);
+  dest.buffer[index] = writeValue;
+  var position_i32: vec2<i32> = vec2<i32>(i32(global_id.x), i32(global_id.y));
+  textureStore(outputTexture, position_i32, writeValue);
 }
 
 `;
@@ -224,40 +193,7 @@ class RendererContext
         
         // ==========================================
         // Create Compute Pipeline 
-        // ==========================================
-
-        // Kernel Source
-        this.computeShaderModule = this.device.createShaderModule({code: kernelSource}); // load SPIR-V instead
-        this.computePipeline = this.device.createComputePipeline({
-                                compute:{
-                                  module: this.computeShaderModule,
-                                  entryPoint: 'main'
-                                }
-                              });
-        
-        this.computeConstants = this.device.createBindGroup({
-          layout: this.computePipeline.getBindGroupLayout(0),
-          entries: [
-            {
-              binding: 0,
-              resource: this.sampler
-            }
-          ]
-        });
-        this.computeBindGroup = this.device.createBindGroup({
-          layout: this.computePipeline.getBindGroupLayout(1),
-          entries: [
-            {
-              binding: 0,
-              resource: this.videoTexture.createView()
-            },
-            {
-              binding: 1,
-              resource: this.operationalTexture.createView()
-            }
-          ]
-        });
-        
+        // ==========================================        
 
         // PFC Source
         this.pfcShaderModule = this.device.createShaderModule({code: pfcSource}); // load SPIR-V instead  
@@ -285,6 +221,10 @@ class RendererContext
               {
                 buffer: this.operationalBuffer
               }
+            },
+            {
+              binding: 2,
+              resource: this.operationalTexture.createView()
             }
           ]
         });
@@ -375,13 +315,7 @@ class RendererContext
           pfcPass.dispatch(video.videoWidth, video.videoHeight);
           pfcPass.endPass();
 
-          const computePass = commandEncoder.beginComputePass();
-          computePass.setPipeline(this.computePipeline);
-          computePass.setBindGroup(0, this.computeConstants);
-          computePass.setBindGroup(1, this.computeBindGroup);
-          computePass.dispatch(video.videoWidth, video.videoHeight);
-          computePass.endPass();
-
+          
           //==========================================
           // RenderPhase to blit the texture
           /* GPUTexture */
