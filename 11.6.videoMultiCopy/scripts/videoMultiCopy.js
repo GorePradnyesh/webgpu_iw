@@ -72,23 +72,24 @@ const f32ComputeSource=`
   buffer: array<vec4<f32>>;
 };
 
+[[block]] struct ComputeParams
+{
+  width: u32;
+  height: u32;
+};
+
 [[group(0), binding(0)]] var<storage, read_write> source : sourceData;
-[[group(0), binding(1)]] var<storage, read_write> dest : operationalData;
-[[group(0), binding(2)]] var outputTexture: texture_storage_2d<rgba8unorm, write>;
+[[group(0), binding(1)]] var outputTexture: texture_storage_2d<rgba8unorm, write>;
+[[group(0), binding(2)]] var<uniform> params : ComputeParams;
 
 [[stage(compute)]]
 fn main([[builtin(global_invocation_id)]] global_id: vec3<u32>)
 {
-  var index: u32 = global_id.y * u32(1920) + global_id.x;
+  var index: u32 = global_id.y * u32(params.width) + global_id.x;
   var readValue: u32 = source.buffer[index];
-
-  // var float_1: f32 = f32(readValue & 0x000000ff);
   var writeValue: vec4<f32> = unpack4x8unorm(readValue);
-
-  var writeValue_o: vec4<f32> = vec4<f32>(writeValue.x, writeValue.y, writeValue.z, 1.0);
-  dest.buffer[index] = writeValue;
   var position_i32: vec2<i32> = vec2<i32>(i32(global_id.x), i32(global_id.y));
-  textureStore(outputTexture, position_i32, writeValue_o);
+  textureStore(outputTexture, position_i32, writeValue);
 }
 
 `;
@@ -134,6 +135,16 @@ class RendererContext
         // ==========================================
         // Allocate Storage Buffers and Display Texture
         // ==========================================        
+        
+        // Compute params.
+        this.computeParams = new Uint32Array([video.videoWidth, video.videoHeight]);
+        this.computeParamsBuffer = device.createBuffer({
+          // size: this.computeParams.byteLength,
+          size: 8,
+          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+        });
+
+
         this.bufferWidth = video.videoWidth;
         this.bufferHeight = video.videoHeight;
         
@@ -151,16 +162,6 @@ class RendererContext
           bytesPerRow: this.bufferWidth * this.bytesPerPix, // NOTE: !! Assumin alignment !! 
           rowPerImage: this.bufferHeight
         };
-        
-        // operational buffer
-        this.operationalBytesPerPix = 4 * 4; //  (rgba32float)
-        this.operationalVideoBufferSize = (this.bufferWidth * this.operationalBytesPerPix) * (this.bufferHeight);
-        this.operationalBuffer = this.device.createBuffer({
-          size: this.operationalVideoBufferSize,
-          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-          mappedAtCreation: true
-        });
-        this.operationalBuffer.unmap();
 
         // Create the texture to decode video frame to.
         const videoTextureFormat = 'rgba8unorm';
@@ -221,14 +222,13 @@ class RendererContext
             },
             {
               binding: 1,
-              resource:
-              {
-                buffer: this.operationalBuffer
-              }
+              resource: this.operationalTexture.createView()
             },
             {
               binding: 2,
-              resource: this.operationalTexture.createView()
+              resource: {
+                buffer: this.computeParamsBuffer,
+              },
             }
           ]
         });
@@ -282,7 +282,7 @@ class RendererContext
             {
               binding: 1,
               resource: this.operationalTexture.createView()
-            },
+            },            
           ],
         });
         console.log("Init complete"); 
@@ -290,7 +290,13 @@ class RendererContext
 
     async FrameRender()
     {      
-      
+      // write computeParams
+      this.device.queue.writeBuffer(
+        this.computeParamsBuffer,
+        0,
+        this.computeParams
+      );
+
       createImageBitmap(video).then(videoFrameBitmap =>
         {
           /* GPUCommandEncoder */
@@ -352,62 +358,7 @@ class RendererContext
 
         } // End of then block
       );  // Enf of then function
-    }
-
-    /*
-    async Render()
-    {        
-        // Rendering
-        
-        // GPUCommandEncoder
-        const commandEncoder = this.device.createCommandEncoder();
-        
-        //==========================================
-        // Compute phase to write to buffer
-        const computePass = commandEncoder.beginComputePass();
-        computePass.setPipeline(this.computePipeline);
-        computePass.setBindGroup(0, this.computeBindGroup);
-        computePass.dispatch(this.bufferWidth, this.bufferHeight);
-        computePass.endPass();
-
-        //==========================================
-        // Copy Buffer to Texture
-        commandEncoder.copyBufferToTexture(
-          this.imageCopyBuffer, 
-          this.imageCopyTexture, 
-          [this.bufferWidth, this.bufferHeight, 1]);
-        
-        //==========================================
-        // RenderPhase to blit the texture
-        // GPUTexture 
-        this.currentSwapChainTexture = this.swapChain.getCurrentTexture();        
-        // GPUTextureView 
-        this.currentRenderView = this.currentSwapChainTexture.createView();
-        const colorAttachmentDescriptor = {
-            view: this.currentRenderView,
-            loadOp: "clear",
-            storeOp: "store",
-            loadValue: this.loadColor
-        };        
-        // GPURenderPassDescriptor
-        const renderPassDescriptor = { colorAttachments: [colorAttachmentDescriptor] };
-        const renderPassEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-        renderPassEncoder.setPipeline(this.renderPipeline);
-        renderPassEncoder.setBindGroup(0, this.uniformBindGroup);
-        renderPassEncoder.setVertexBuffer(0, this.verticesBuffer);
-        renderPassEncoder.draw(6, 1, 0, 0);
-        renderPassEncoder.endPass();
-        
-        // GPUComamndBuffer
-        const commandBuffer = commandEncoder.finish();
-        
-        /// GPUQueue
-        const queue = this.device.queue;
-        queue.submit([commandBuffer]);
-
-        requestAnimationFrame(() => { this.Render() } );
-    }
-    */
+    }    
 
     /*
     **
