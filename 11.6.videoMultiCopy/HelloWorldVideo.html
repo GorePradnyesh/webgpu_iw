@@ -1,0 +1,32 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=600">
+        <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+        <title>WebGPU Hello Triangle</title>
+
+        <style>
+            body {
+                font-family: system-ui;
+                color: rgb(57, 2, 115);
+                background-color: rgb(244, 234, 255);
+                text-align: center;
+            }
+            canvas {
+                margin: 0 auto;
+            }
+        </style>
+
+    </head>
+    <body>
+        <div id="contents">
+            <h1>Blit VideoFrame to Texture</h1>            
+            <h4>Description TBD</h4>
+            <p>If the video does not show you might be missing the video in the assets directory.</p>
+            <canvas></canvas>
+        </div>
+        <div>
+            <video id="video_src" src="../assets/Term.mp4" loop="true" muted="true" width="324" height="576"></video>
+        </div>
+        <script src="scripts/videoMultiCopy.js"></script>
+    </body>
+</html>
