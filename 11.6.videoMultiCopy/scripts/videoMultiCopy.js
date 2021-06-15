@@ -76,6 +76,7 @@ const f32ComputeSource=`
 {
   width: u32;
   height: u32;
+  brightness: u32;
 };
 
 [[group(0), binding(0)]] var<storage, read_write> source : sourceData;
@@ -88,8 +89,19 @@ fn main([[builtin(global_invocation_id)]] global_id: vec3<u32>)
   var index: u32 = global_id.y * u32(params.width) + global_id.x;
   var readValue: u32 = source.buffer[index];
   var writeValue: vec4<f32> = unpack4x8unorm(readValue);
+
+  var brightnessFactor: vec4<f32>;
+  if(params.brightness > u32(0))
+  {
+    brightnessFactor = vec4<f32>(f32(params.brightness)/255.0, f32(params.brightness)/255.0, f32(params.brightness)/255.0, f32(params.brightness)/255.0);
+  }
+  var zeroValue: vec4<f32> = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+  var maxValue: vec4<f32> = vec4<f32>(255.0, 255.0, 255.0, 255.0);
+
+  var adjustedColor: vec4<f32> = clamp(writeValue + brightnessFactor, zeroValue, maxValue);
+
   var position_i32: vec2<i32> = vec2<i32>(i32(global_id.x), i32(global_id.y));
-  textureStore(outputTexture, position_i32, writeValue);
+  textureStore(outputTexture, position_i32, adjustedColor);
 }
 
 `;
@@ -137,10 +149,10 @@ class RendererContext
         // ==========================================        
         
         // Compute params.
-        this.computeParams = new Uint32Array([video.videoWidth, video.videoHeight]);
+        this.brightness = 50;
+        this.computeParams = new Uint32Array([video.videoWidth, video.videoHeight, this.brightness]);
         this.computeParamsBuffer = device.createBuffer({
-          // size: this.computeParams.byteLength,
-          size: 8,
+          size: this.computeParams.byteLength,
           usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
         });
 
